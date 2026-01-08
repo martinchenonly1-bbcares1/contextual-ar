@@ -1,19 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Shirt, Camera, User, Sparkles, X, Zap, Crown, ArrowRight } from 'lucide-react';
+import { Home, Shirt, Camera, User, Sparkles, X, Zap, Crown, ArrowRight, Lock } from 'lucide-react';
 import TryOnPage from './components/TryOnPage';
 import ExplorePage from './components/ExplorePage';
 import WardrobePage from './components/WardrobePage';
 import ProfilePage from './components/ProfilePage';
 
 function App() {
-  // 从 localStorage 读取是否已经进入过应用
-  const [hasEntered, setHasEntered] = useState(false);
+  const [hasEntered, setHasEntered] = useState(() => {
+    return localStorage.getItem('hasEntered') === 'true';
+  });
+  
+  // 检查登录状态
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem('isLoggedIn') === 'true';
+  });
+  
   const [activeTab, setActiveTab] = useState('explore');
   const [credits, setCredits] = useState(250);
   const [showTopUp, setShowTopUp] = useState(false);
   const [wardrobe, setWardrobe] = useState([]);
   const [approvedProducts, setApprovedProducts] = useState([]);
+
+  useEffect(() => {
+    if (hasEntered) {
+      localStorage.setItem('hasEntered', 'true');
+    }
+  }, [hasEntered]);
+
+  // 监听登录状态变化
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const loginStatus = localStorage.getItem('isLoggedIn') === 'true';
+      setIsLoggedIn(loginStatus);
+    };
+    
+    // 每秒检查一次登录状态
+    const interval = setInterval(checkLoginStatus, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const tabs = [
     { id: 'explore', label: 'Explore', icon: Home },
@@ -43,6 +69,39 @@ function App() {
   };
 
   const renderActivePage = () => {
+    // 如果未登录且不是 Profile 页面，显示登录提示
+    if (!isLoggedIn && activeTab !== 'profile') {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-md w-full text-center"
+          >
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }}
+              className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-2xl flex items-center justify-center"
+            >
+              <Lock className="w-12 h-12 text-white" />
+            </motion.div>
+            <h2 className="text-3xl font-bold mb-4">Login Required</h2>
+            <p className="text-gray-400 mb-8">
+              Please login to access {activeTab === 'explore' ? 'Explore' : activeTab === 'wardrobe' ? 'Wardrobe' : 'Try-On'} features
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveTab('profile')}
+              className="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-xl font-bold text-lg"
+            >
+              Go to Login
+            </motion.button>
+          </motion.div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'explore':
         return <ExplorePage wardrobe={wardrobe} setWardrobe={setWardrobe} approvedProducts={approvedProducts} />;
@@ -61,7 +120,6 @@ function App() {
   if (!hasEntered) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-6 overflow-hidden relative">
-        {/* 背景动画效果 */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
@@ -74,14 +132,12 @@ function App() {
           }} />
         </div>
 
-        {/* 主内容 */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative z-10 text-center max-w-2xl"
         >
-          {/* Logo 动画 */}
           <motion.div
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -106,7 +162,6 @@ function App() {
             </div>
           </motion.div>
 
-          {/* 标题 */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -123,7 +178,6 @@ function App() {
             />
           </motion.div>
 
-          {/* 副标题 */}
           <motion.p
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -142,7 +196,6 @@ function App() {
             Experience the future of virtual fashion try-on
           </motion.p>
 
-          {/* 进入按钮 */}
           <motion.button
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -169,7 +222,6 @@ function App() {
             </span>
           </motion.button>
 
-          {/* 特性标签 */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -199,7 +251,6 @@ function App() {
           </motion.div>
         </motion.div>
 
-        {/* 装饰性粒子效果 */}
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(20)].map((_, i) => (
             <motion.div
@@ -238,11 +289,30 @@ function App() {
             </div>
             <span className="text-xl font-bold tracking-tighter">CONTEXTUAL</span>
           </motion.div>
-          <motion.button onClick={() => setShowTopUp(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-cyan-400/20 px-4 py-2 rounded-full border border-purple-500/30 hover:border-purple-500/50 transition-all" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
-            <span className="text-sm font-mono font-bold">{credits}</span>
-            <span className="text-xs text-gray-400">CR</span>
-          </motion.button>
+          
+          {/* 只有登录后才显示积分 */}
+          {isLoggedIn ? (
+            <motion.button 
+              onClick={() => setShowTopUp(true)} 
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-cyan-400/20 px-4 py-2 rounded-full border border-purple-500/30 hover:border-purple-500/50 transition-all" 
+              whileHover={{ scale: 1.05 }} 
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+              <span className="text-sm font-mono font-bold">{credits}</span>
+              <span className="text-xs text-gray-400">CR</span>
+            </motion.button>
+          ) : (
+            <motion.button
+              onClick={() => setActiveTab('profile')}
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Lock className="w-4 h-4 text-gray-400" />
+              <span className="text-sm font-medium text-gray-400">Login</span>
+            </motion.button>
+          )}
         </div>
       </header>
 
@@ -261,22 +331,34 @@ function App() {
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const isLocked = !isLoggedIn && tab.id !== 'profile';
+            
             return (
-              <motion.button key={tab.id} onClick={() => setActiveTab(tab.id)} className="flex flex-col items-center gap-1 relative" whileTap={{ scale: 0.9 }}>
+              <motion.button 
+                key={tab.id} 
+                onClick={() => setActiveTab(tab.id)} 
+                className="flex flex-col items-center gap-1 relative" 
+                whileTap={{ scale: 0.9 }}
+              >
                 {isActive && <motion.div layoutId="activeTab" className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full" transition={{ type: 'spring', stiffness: 500, damping: 30 }} />}
-                <div className={`p-2 rounded-xl transition-colors ${isActive ? 'bg-gradient-to-br from-purple-500/20 to-cyan-400/20' : 'bg-transparent'}`}>
-                  <Icon className={`w-6 h-6 transition-colors ${isActive ? 'text-cyan-400' : 'text-gray-400'}`} />
+                <div className={`p-2 rounded-xl transition-colors relative ${isActive ? 'bg-gradient-to-br from-purple-500/20 to-cyan-400/20' : 'bg-transparent'}`}>
+                  <Icon className={`w-6 h-6 transition-colors ${isActive ? 'text-cyan-400' : isLocked ? 'text-gray-600' : 'text-gray-400'}`} />
+                  {isLocked && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                      <Lock className="w-2.5 h-2.5 text-white" />
+                    </div>
+                  )}
                 </div>
-                <span className={`text-xs font-medium transition-colors ${isActive ? 'text-white' : 'text-gray-500'}`}>{tab.label}</span>
+                <span className={`text-xs font-medium transition-colors ${isActive ? 'text-white' : isLocked ? 'text-gray-600' : 'text-gray-500'}`}>{tab.label}</span>
               </motion.button>
             );
           })}
         </div>
       </nav>
 
-      {/* Top-Up Modal */}
+      {/* Top-Up Modal - 只有登录后才能打开 */}
       <AnimatePresence>
-        {showTopUp && (
+        {showTopUp && isLoggedIn && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setShowTopUp(false)}>
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-3xl p-6 space-y-6">
               <div className="flex items-center justify-between">
